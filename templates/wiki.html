@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if note %}
+<p>[<a href='/edit?name={{name}}' >править</a>]</p>
+{{ note['content'] |safe }}
+{% else %}
+<h1>Страницы "{{name}}" не существует, удалена или перенесена.</h1>
+<p>Но Вы можете <a href="/edit?name={{name}}">создать</a> страницу</p>
+{% endif %}
+{% endblock %}

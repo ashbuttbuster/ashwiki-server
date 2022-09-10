@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset='utf-8' />
+		{% if css %}
+		<link rel='stylesheet' type='text/css' href='{{css}}' />
+		{% endif %}
+		{% if title %}
+		<title>>ASHWIKI - {{title}}</title>
+		{% else %}
+		<title>>ASHWIKI</title>
+		{% endif %}
+	</head>
+	<body>
+		<table>
+			<tr>
+				<td class="logo" colspan=2>
+					<a href="/"><img src='/img/logo.png'/></a>
+				</td>
+			</tr>
+			<tr class="navbar">
+				<td class='navbar'>
+					<form action="/search" method="get">
+						<input class="q" name='q' type='text' placeholder='Поиск по статьям'>
+						<input class="buttonsearch" type='submit' value=''>
+					</form><br>
+					
+					<a href="/">Главная</a><br>
+					<a href="/random">Случайная статья</a><br>	
+				</td>
+				<td>
+					{% block content %}{% endblock %}
+				</td>
+			</tr>
+			<tr>
+				<td colspan=2>
+					<p>©2022 ash_buttbuster. Распространение только с разрешения правообладателя.</p>
+					<p>Эл.почта: <a href="mailto:1n7n37@gmail.com">1n7n37@gmail.com</a></p>
+					<p>Вконтакте: <a href="https://vk.com/ash_buttbuster">vk.com/ash_buttbuster</a></p>
+					<p>Telegram: <a href="https://t.me/AshButtbuster">t.me/AshButtbuster</a></p>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
+
+	</body>
+</html>

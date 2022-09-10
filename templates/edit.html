@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>
+	{% if note %}
+		Редактирование
+	{% else %}
+		Создание
+	{% endif %}
+ страницы "{{name}}"
+</h1>
+<form name="pageedit" action="/save" method='get'>
+	<input type="hidden" name='name' value='{{name}}'>
+	<p>Название:<input type="text" name='caption' value='{{note['caption']}}'></p>
+	<p>Описание:<input type="text" name='desc' value='{{note['desc']}}'></p>
+	<p><textarea name='content' rows='25' cols='30'>{{note['content']}}</textarea></p>
+	<input type="submit" value="Сохранить">
+</form>
+{% endblock %}

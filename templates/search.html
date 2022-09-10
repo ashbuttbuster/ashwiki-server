@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Поиск по запросу "{{q}}"</h1>
+
+{% if result %}
+{% for element in result %}
+<h2><a href="/wiki/{{element.name}}">{{element.caption |safe }}</a></h2>
+<p>{{element.desc |safe}}</p>
+<p>[<a href='/edit?name={{element.name}}'>править</a>] [<a href='/delete?name={{element.name}}&q={{q}}'>удалить</a>]</p>
+{% endfor %}
+{% else %}
+<p>По данному запросу ничего не найдено. Возможно, Вы допустили опечатку. Или попробуйте изменить запрос. Также вы можете <a href="/edit?name={{q}}">создать</a> страницу</p>
+{% endif %}
+
+{% endblock %}
