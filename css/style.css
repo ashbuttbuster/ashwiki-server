@@ -1,0 +1,77 @@
+@font-face {
+	font-family: "Unifont";
+	src: url("/fonts/Unifont.ttf") format("truetype");
+}
+
+@font-face {
+	font-family: "PressStart2P";
+	src: url("/fonts/PressStart2P.ttf") format("truetype");
+}
+
+*, *:before, *:after {
+	box-sizing: border-box;
+}
+
+body {
+	background-color: #111111;
+	color: #cccccc;
+	font-family: Unifont;
+}
+
+a {
+	text-decoration: none;
+	font-weight: bold;
+	color: #cccc00;
+}
+
+h1,h2,h3 {
+	color: white;
+}
+
+h1 {
+	font-family: PressStart2P;
+	font-weight: normal;
+	font-size: 170%;
+	text-align: center;
+}
+
+input[type=text],textarea {
+	padding: 5px;
+	border: 2px solid #cccccc;
+	background: transparent;
+	font-family: Unifont;
+	font-size: 20px;
+	color: #cccccc
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  resize: both;
+  min-height: 40px;
+  line-height: 20px;	
+}
+
+.buttonsearch {
+	background-image: url('/img/button_search.png');
+	background-size:cover;
+	width: 36px;
+	height: 36px;
+	border: none;
+}
+
+.q
+{
+	width: 200px;
+}
+
+.tag {
+	background-color: #cccccc;
+	color: #111111;
+	padding: 2px;
+}
+
+.navbar {
+	vertical-align: top;
+}
