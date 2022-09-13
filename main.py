@@ -7,56 +7,18 @@ from markdown.extensions.wikilinks import WikiLinkExtension
 import random
 import os
 import re
-import sqlite3
 
-SQLITE_FILE = 'ashwiki.db'
-
-def selectQuery(table,keywords,condition):
-    try:
-        conn = sqlite3.connect(SQLITE_FILE)
-        sql = "SELECT {} FROM {}".format(','.join(keywords),table)
-        if condition:
-            sql = sql + " WHERE {};".format(condition)
-        print(sql)
-        cursor = conn.execute(sql)
-        result = []
-
-        for row in cursor:
-            record = {}
-            for i in range(len(keywords)):
-                record[keywords[i]] = row[i]
-            result.append(record)
-            print(record)
-        return result
-    except sqlite3.Error as error:
-        print('Error: ',error)
-        return None
-    finally:
-        conn.close()
+import sqlutils
 
 def renderHTML(pagetype,**args):
     return render_template(pagetype+".html", **args)
 
 def getNote(name):
-    result = selectQuery('notes',['name','caption','desc','content'],'name="{}"'.format(name))
+    result = sqlutils.selectQuery('notes',['name','caption','desc','content'],'name="{}"'.format(name))
     if len(result) == 0:
         return None
     else:
         return result[0]
-
-def savePage(name,desc,caption,content):
-    try:
-        conn = sqlite3.connect('ashwiki.db')
-        if getNote(name):
-            sql = "UPDATE notes SET caption = '{}',desc = '{}', content = '{}' WHERE name = '{}';".format(caption,desc,content,name)
-        else:
-            sql = "INSERT INTO notes(name,caption,desc,content,author) VALUES ('{}','{}','{}','{}','{}')".format(name,caption,desc,content,'0')
-        conn.execute(sql)
-        conn.commit()
-    except sqlite3.Error:
-        print(error)
-    finally:
-        conn.close()
 
 def deletePageQuery(name):
     try:
@@ -73,7 +35,7 @@ def deletePageQuery(name):
 def searchResult(q):
     Q = q.lower().split(' ')
     matchd = []
-    result = selectQuery('notes',['name','desc','caption','author'],None)        
+    result = sqlutils.selectQuery('notes',['name','desc','caption','author'],None)        
     for row in result:
         if any(el in row['caption'].lower() for el in re.split(" .,!?-",q.lower())):
             caption = ""
@@ -87,6 +49,7 @@ def searchResult(q):
                     caption = caption + " {}. ".format(word)
 
                 row['caption'] = caption
+            matchd.append(row)
         elif set(Q) & set(row['desc'].lower().split(' ')):
             new_desc = ""
             for word in row['desc'].split(' '):
@@ -99,8 +62,7 @@ def searchResult(q):
 
                 row['desc'] = new_desc
 
-
-        matchd.append(row)
+            matchd.append(row)
     return matchd
 
 app = Flask(__name__)
@@ -133,7 +95,14 @@ def save():
     desc = request.args.get('desc')
     caption = request.args.get('caption')
     
-    savePage(name,desc,caption,content)
+    if getNote(name):
+        sqlutils.updateQuery('notes',[
+                ['desc',desc],
+                ['caption',caption],
+                ['content',content]
+            ],'name="{}"'.format(name))
+    else:
+        sqlutils.insertQuery('notes',['name','desc','caption','content','author'],[[name,desc,caption,content,'0']]) 
 
     return redirect('/wiki/{}'.format(name),302)
 #    return renderHTML("save",css="/css/style.css",name=name)
@@ -142,7 +111,7 @@ def save():
 def deletePage():
     name = request.args.get('name')
     q = request.args.get('q')
-    deletePageQuery(name)
+    sqlutils.deleteQuery('notes','name="{}"'.format(name))
     return redirect('/search?q={}'.format(q))
 
 @app.route('/random')
