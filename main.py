@@ -1,5 +1,5 @@
 from flask import Flask, request, send_from_directory, redirect
-from flask import render_template,flash, redirect, url_for
+from flask import render_template,flash, redirect, url_for, make_response
 
 import markdown
 from markdown.extensions.wikilinks import WikiLinkExtension
@@ -7,11 +7,15 @@ from markdown.extensions.wikilinks import WikiLinkExtension
 import random
 import os
 import re
+from hashlib import sha256
 
 import sqlutils
 
 def renderHTML(pagetype,**args):
     return render_template(pagetype+".html", **args)
+
+def identProfile():
+    return request.cookies.get('login') 
 
 def getNote(name):
     result = sqlutils.selectQuery('notes',['name','caption','desc','content'],'name="{}"'.format(name))
@@ -69,7 +73,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return renderHTML("index",css="/css/style.css")
+    return renderHTML("index",css="/css/style.css", profile=identProfile())
 
 @app.route('/wiki/<name>/')
 def page_name(name):
@@ -80,13 +84,13 @@ def page_name(name):
         title = note['caption']
     else:
         title = name
-    return renderHTML("wiki",title=title, name=name,note=note,css='/css/style.css')
+    return renderHTML("wiki",title=title, name=name,note=note,css='/css/style.css',profile=identProfile())
 
 @app.route('/edit')
 def editPage():
     name = request.args.get('name')
     note = getNote(name)
-    return renderHTML("edit",css="/css/style.css",title="Редактирование страницы", name=name,note=note)
+    return renderHTML("edit",css="/css/style.css",title="Редактирование страницы", name=name,note=note,profile=identProfile())
 
 @app.route('/save')
 def save():
@@ -144,7 +148,27 @@ def searchPage():
     q = request.args.get('q')
     result = searchResult(q)
                
-    return renderHTML("search",q=q,result=result,css='/css/style.css')
+    return renderHTML("search",q=q,result=result,css='/css/style.css',profile=identProfile())
+
+@app.route('/login',methods = ['POST','GET'])
+def loginPage():
+    if request.method == 'POST':
+        login = request.form['login']
+        password = request.form['password']
+
+        profile = sqlutils.selectQuery('profile',['login','password'],'login="{}"'.format(login))
+        # профиль не найден
+        if len(profile) == 0: 
+            return renderHTML("login",css='/css/style.css',errmsg='Такого профиля не существует! :(')
+        # введен неправильный пароль
+        elif profile[0]['password'] != sha256(password.encode('utf-8')).hexdigest():
+            return renderHTML("login",css='/css/style.css',errmsg='Неверный пароль! :(')
+        else:
+            resp = make_response(renderHTML("index",css='/css/style.css',profile=login))
+            resp.set_cookie('login',login)
+            return resp
+    else:
+        return renderHTML("login",css='/css/style.css')
 
 if __name__ == "__main__":
     app.run()
