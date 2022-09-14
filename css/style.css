@@ -46,7 +46,7 @@ h1 {
 	text-align: center;
 }
 
-input[type=text],textarea {
+input[type=text],input[type=password],textarea {
 	padding: 5px;
 	border: 2px solid #cccccc;
 	background: transparent;
@@ -109,4 +109,17 @@ input[type=text],textarea {
 .contacts {
 	width: 32px;
 	height: 32px;
+}
+
+.error {
+	color: white;
+	background: #cc1111;
+	font-family: PressStart2P;
+	padding: 4px;
+}
+
+.profile {
+	text-decoration: underline;
+	color: white;
+	font-weight: bold;
 }
