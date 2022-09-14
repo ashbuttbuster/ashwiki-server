@@ -18,8 +18,12 @@
 					<a href="/"><img src='/img/logo.png'/></a>
 				</td>
 				<td>
+				{% if profile %}
+				<p align='right'>Вы вошли как <span class="profile">{{profile}}</span> [<a href='/logout'>выйти</a>]</p>
+				{% else %}
 					<p align='right'>Вы не вошли под своим именем 
 					[<a href="/login">войти</a>] [<a href="/register">регистрация</a>]</p>
+				{% endif %}
 				</td>
 			</tr>
 			<tr class="navbar">
