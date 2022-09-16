@@ -1,33 +1,29 @@
-import sqlite3
+import mysql.connector
 
-SQLITE_FILE = 'ashwiki.db'
+DB = mysql.connector.connect(
+        host='localhost',
+        user='webmaster',
+        password='12345678',
+        database='ashwiki'
+)
 
 def selectQuery(table,keywords,condition):
-    try:
-        conn = sqlite3.connect(SQLITE_FILE)
-        sql = "SELECT {} FROM {}".format(','.join(keywords),table)
-        if condition:
-            sql = sql + " WHERE {};".format(condition)
-        print(sql)
-        cursor = conn.execute(sql)
-        result = []
-
-        for row in cursor:
-            record = {}
-            for i in range(len(keywords)):
-                record[keywords[i]] = row[i]
-            result.append(record)
-        return result
-    except sqlite3.Error as error:
-        print('Error: ',error)
-        return None
-    finally:
-        conn.close()
+    cursor = DB.cursor()
+    sql = "SELECT {} FROM {}".format(','.join(keywords),table)
+    if condition:
+        sql = sql + " WHERE {};".format(condition)
+    print(sql)
+    result = []
+    cursor.execute(sql)
+    for row in cursor:
+        record = {}
+        for i in range(len(keywords)):
+            record[keywords[i]] = row[i]
+        result.append(record)
+    return result
 
 def insertQuery(table,keywords,values):
-    try:
-        conn = sqlite3.connect(SQLITE_FILE)
-
+        cursor = DB.cursor()
         strval = ""
         for l in values:
             sl = "('{}')".format("','".join(l))
@@ -35,41 +31,25 @@ def insertQuery(table,keywords,values):
         strval = strval[:-1] + ';'
 
         sql = "INSERT INTO {}({}) VALUES {}".format(table,','.join(keywords),strval)
-        conn.execute(sql)
-        conn.commit()
+        cursor.execute(sql)
+        DB.commit()
         print(sql)
-    except sqlite3.Error as error:
-        print("Error: ",error)
-    finally:
-        conn.close()
 
 def updateQuery(table,sets,condition):
-    try:
-        conn = sqlite3.connect(SQLITE_FILE)
-        updates = ""
-        for pair in sets:
-            pair[1] = "'{}'".format(pair[1])
-            updates = updates + " = ".join(pair) + ","
+    cursor = DB.cursor()
+    updates = ""
+    for pair in sets:
+        pair[1] = "'{}'".format(pair[1])
+        updates = updates + " = ".join(pair) + ","
 
-        sql = "UPDATE {} SET {} WHERE {};".format(table,updates[:-1],condition)
-        conn.execute(sql)
-        conn.commit()
-        print(sql)
-    except sqlite3.Error as error:
-        print(sql)
-        print('Error: ',error)
-    finally:
-        conn.close()
+    sql = "UPDATE {} SET {} WHERE {};".format(table,updates[:-1],condition)
+    cursor.execute(sql)
+    DB.commit()
+    print(sql)
 
 def deleteQuery(table,condition):
-    try:
-        conn = sqlite3.connect(SQLITE_FILE)
-        sql = "DELETE FROM {} WHERE {};".format(table,condition)
-        print(sql)
-        conn.execute(sql)
-        conn.commit()
-    except sqlite3.Error as error:
-        print(sql)
-        print('Error: ',error)
-    finally:
-        conn.close()
+    cursor = DB.cursor()
+    sql = "DELETE FROM {} WHERE {};".format(table,condition)
+    print(sql)
+    cursor.execute(sql)
+    DB.commit()

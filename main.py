@@ -18,7 +18,7 @@ def identProfile():
     return request.cookies.get('login') 
 
 def getNote(name):
-    result = sqlutils.selectQuery('notes',['name','caption','desc','content'],'name="{}"'.format(name))
+    result = sqlutils.selectQuery('notes',['name','caption','annotation','content'],'name="{}"'.format(name))
     if len(result) == 0:
         return None
     else:
@@ -39,7 +39,7 @@ def deletePageQuery(name):
 def searchResult(q):
     Q = q.lower().split(' ')
     matchd = []
-    result = sqlutils.selectQuery('notes',['name','desc','caption','author'],None)        
+    result = sqlutils.selectQuery('notes',['name','annotation','caption','author'],None)        
     for row in result:
         if any(el in row['caption'].lower() for el in re.split(" .,!?-",q.lower())):
             caption = ""
@@ -54,9 +54,9 @@ def searchResult(q):
 
                 row['caption'] = caption
             matchd.append(row)
-        elif set(Q) & set(row['desc'].lower().split(' ')):
+        elif set(Q) & set(row['annotation'].lower().split(' ')):
             new_desc = ""
-            for word in row['desc'].split(' '):
+            for word in row['annotaion'].split(' '):
                 if any(el in word.lower() for el in Q):
                     new_desc = new_desc + " <span class='tag'>{}</span> ".format(word)
                 elif any(el in word.lower()+"." for el in Q):
@@ -64,7 +64,7 @@ def searchResult(q):
                 else:
                     new_desc = new_desc + " {} ".format(word)
 
-                row['desc'] = new_desc
+                row['annotation'] = new_desc
 
             matchd.append(row)
     return matchd
@@ -86,30 +86,27 @@ def page_name(name):
         title = name
     return renderHTML("wiki",title=title, name=name,note=note,css='/css/style.css',profile=identProfile())
 
-@app.route('/edit')
+@app.route('/edit',methods = ['POST','GET'])
 def editPage():
-    name = request.args.get('name')
-    note = getNote(name)
-    return renderHTML("edit",css="/css/style.css",title="Редактирование страницы", name=name,note=note,profile=identProfile())
-
-@app.route('/save')
-def save():
-    name = request.args.get('name')
-    content = request.args.get('content')
-    desc = request.args.get('desc')
-    caption = request.args.get('caption')
+    if request.method == 'POST':
+        name = request.form['name']
+        content = request.form['content']
+        desc = request.form['desc']
+        caption = request.form['caption']
     
-    if getNote(name):
-        sqlutils.updateQuery('notes',[
-                ['desc',desc],
-                ['caption',caption],
-                ['content',content]
-            ],'name="{}"'.format(name))
+        if getNote(name):
+            sqlutils.updateQuery('notes',[
+                    ['annotation',desc],
+                    ['caption',caption],
+                    ['content',content]
+                ],'name="{}"'.format(name))
+        else:
+            sqlutils.insertQuery('notes',['name','annotation','caption','content','author'],[[name,desc,caption,content,'0']]) 
+        return redirect('/wiki/{}'.format(name),302)
     else:
-        sqlutils.insertQuery('notes',['name','desc','caption','content','author'],[[name,desc,caption,content,'0']]) 
-
-    return redirect('/wiki/{}'.format(name),302)
-#    return renderHTML("save",css="/css/style.css",name=name)
+        name = request.args.get('name')
+        note = getNote(name)
+        return renderHTML("edit",css="/css/style.css",title="Редактирование страницы", name=name,note=note,profile=identProfile())
 
 @app.route('/delete')
 def deletePage():
@@ -169,6 +166,12 @@ def loginPage():
             return resp
     else:
         return renderHTML("login",css='/css/style.css')
+
+@app.route("/logout")
+def actionLogout():
+    resp = make_response(renderHTML("index",css='/css/style.css'))
+    resp.set_cookie('login','', expires=0)
+    return resp
 
 if __name__ == "__main__":
     app.run()
