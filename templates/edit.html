@@ -8,10 +8,10 @@
 	{% endif %}
  страницы "{{name}}"
 </h1>
-<form name="pageedit" action="/save" method='get'>
+<form name="pageedit" action="/edit" method='post'>
 	<input type="hidden" name='name' value='{{name}}'>
 	<p>Название:<input type="text" name='caption' value='{{note['caption']}}'></p>
-	<p>Описание:<input type="text" name='desc' value='{{note['desc']}}'></p>
+	<p>Описание:<input type="text" name='desc' value='{{note['annotation']}}'></p>
 	<p><textarea name='content' rows='25' cols='30'>{{note['content']}}</textarea></p>
 	<input class="buttonplain" type="submit" value="Сохранить">
 </form>
