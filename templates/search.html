@@ -7,6 +7,7 @@
 {% for element in result %}
 <h2><a href="/wiki/{{element.name}}">{{element.caption |safe }}</a></h2>
 <p>{{element.annotation |safe}}</p>
+<p>Автор: {{element.author}}</p>
 <p>[<a href='/edit?name={{element.name}}'>править</a>] [<a href='/delete?name={{element.name}}&q={{q}}'>удалить</a>]</p>
 {% endfor %}
 {% else %}
