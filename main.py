@@ -24,23 +24,12 @@ def getNote(name):
     else:
         return result[0]
 
-def deletePageQuery(name):
-    try:
-        conn = sqlite3.connect('ashwiki.db')
-        sql = "DELETE FROM notes WHERE name=\"{}\"".format(name)
-
-        conn.execute(sql)
-        conn.commit()
-    except sqlite3.Error as error:
-        print(error)
-    finally:
-        conn.close()
-
 def searchResult(q):
     Q = q.lower().split(' ')
     matchd = []
     result = sqlutils.selectQuery('notes',['name','annotation','caption','author'],None)        
     for row in result:
+        row['author'] = sqlutils.selectQuery('profile',['profile_id','login'],'profile_id=' + str(row['author']))[0]['login']
         if any(el in row['caption'].lower() for el in re.split(" .,!?-",q.lower())):
             caption = ""
 
@@ -56,7 +45,7 @@ def searchResult(q):
             matchd.append(row)
         elif set(Q) & set(row['annotation'].lower().split(' ')):
             new_desc = ""
-            for word in row['annotaion'].split(' '):
+            for word in row['annotation'].split(' '):
                 if any(el in word.lower() for el in Q):
                     new_desc = new_desc + " <span class='tag'>{}</span> ".format(word)
                 elif any(el in word.lower()+"." for el in Q):
@@ -172,6 +161,28 @@ def actionLogout():
     resp = make_response(renderHTML("index",css='/css/style.css'))
     resp.set_cookie('login','', expires=0)
     return resp
+
+@app.route("/register", methods = ['POST','GET'])
+def registerPage():
+    if request.method == 'POST':
+        login = request.form['login']
+        password = request.form['password']
+        rptpwd = request.form['rptpwd']
+        profile = sqlutils.selectQuery('profile',['login'],'login="{}"'.format(login))
+        if len(profile) > 0:
+            return renderHTML("register",css='/css/style.css',errmsg='Данный логин занят! Попробуйте другой.')
+        elif len(password) < 8:
+            return renderHTML("register",css='/css/style.css',errmsg='Минимальная длина пароля 8 символов!')
+        elif password != rptpwd:
+            return renderHTML("register",css='/css/style.css',errmsg='Пароли не совпадают!')
+        else:
+            sqlutils.insertQuery('profile',['profile_id','login','password','access_level'],[[str(len(sqlutils.selectQuery('profile',['login'],None))),login,sha256(password.encode('utf-8')).hexdigest(),'1']])
+            resp = make_response(renderHTML("index",css='/css/style.css',profile=login))
+            resp.set_cookie('login',login)
+            return resp
+    else:
+        return renderHTML("register",css='/css/style.css')
+    
 
 if __name__ == "__main__":
     app.run()
