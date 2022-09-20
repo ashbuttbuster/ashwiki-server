@@ -8,7 +8,9 @@
 <h2><a href="/wiki/{{element.name}}">{{element.caption |safe }}</a></h2>
 <p>{{element.annotation |safe}}</p>
 <p>Автор: {{element.author}}</p>
-<p>[<a href='/edit?name={{element.name}}'>править</a>] [<a href='/delete?name={{element.name}}&q={{q}}'>удалить</a>]</p>
+{% if level >= 3 %}
+<p>[<a href='/edit?name={{element.name}}'>править</a>] {%if level>=4%}[<a href='/delete?name={{element.name}}&q={{q}}'>удалить</a>]{%endif%}</p>
+{% endif %}
 {% endfor %}
 {% else %}
 <p>По данному запросу ничего не найдено. Возможно, Вы допустили опечатку. Или попробуйте изменить запрос. Также вы можете <a href="/edit?name={{q}}">создать</a> страницу</p>
