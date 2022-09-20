@@ -14,11 +14,24 @@ import sqlutils
 def renderHTML(pagetype,**args):
     return render_template(pagetype+".html", **args)
 
+def renderCookedHTML(cookie,pagetype, **args):
+    result = make_response(renderHTML(pagetype,**args))
+    for key in cookie:
+        result.set_cookie(key,cookie[key])
+    return result
+
 def identProfile():
     return request.cookies.get('login') 
 
+def checkLevel():
+    login = identProfile()
+    if login is None:
+        return 1
+    else:
+        return sqlutils.selectQuery('profile',['login','access_level'],'login="{}"'.format(login))[0]['access_level']
+
 def getNote(name):
-    result = sqlutils.selectQuery('notes',['name','caption','annotation','content'],'name="{}"'.format(name))
+    result = sqlutils.selectQuery('notes',['name','caption','annotation','content','author'],'name="{}"'.format(name))
     if len(result) == 0:
         return None
     else:
@@ -95,13 +108,18 @@ def editPage():
     else:
         name = request.args.get('name')
         note = getNote(name)
-        return renderHTML("edit",css="/css/style.css",title="Редактирование страницы", name=name,note=note,profile=identProfile())
+        author = sqlutils.selectQuery('profile',['profile_id','login'],'profile_id={}'.format(note['author']))[0]['login']
+        if (identProfile() == author) or (checkLevel() >= 3):
+            return renderHTML("edit",css="/css/style.css",title="Редактирование страницы", name=name,note=note,profile=identProfile())
+        else:
+            return redirect('/login',302)
 
 @app.route('/delete')
 def deletePage():
     name = request.args.get('name')
     q = request.args.get('q')
-    sqlutils.deleteQuery('notes','name="{}"'.format(name))
+    if checkLevel() >= 4:
+        sqlutils.deleteQuery('notes','name="{}"'.format(name))
     return redirect('/search?q={}'.format(q))
 
 @app.route('/random')
@@ -134,7 +152,7 @@ def searchPage():
     q = request.args.get('q')
     result = searchResult(q)
                
-    return renderHTML("search",q=q,result=result,css='/css/style.css',profile=identProfile())
+    return renderHTML("search",q=q,result=result,css='/css/style.css',profile=identProfile(),level=checkLevel())
 
 @app.route('/login',methods = ['POST','GET'])
 def loginPage():
@@ -145,16 +163,14 @@ def loginPage():
         profile = sqlutils.selectQuery('profile',['login','password'],'login="{}"'.format(login))
         # профиль не найден
         if len(profile) == 0: 
-            return renderHTML("login",css='/css/style.css',errmsg='Такого профиля не существует! :(')
+            return renderHTML("login",css='/css/style.css',errmsg='Такого профиля не существует! :(',profile=identProfile())
         # введен неправильный пароль
         elif profile[0]['password'] != sha256(password.encode('utf-8')).hexdigest():
-            return renderHTML("login",css='/css/style.css',errmsg='Неверный пароль! :(')
+            return renderHTML("login",css='/css/style.css',errmsg='Неверный пароль! :(',profile=identProfile())
         else:
-            resp = make_response(renderHTML("index",css='/css/style.css',profile=login))
-            resp.set_cookie('login',login)
-            return resp
+            return renderCookedHTML({'login' : login},"index",css='/css/style.css',profile=login)
     else:
-        return renderHTML("login",css='/css/style.css')
+        return renderHTML("login",css='/css/style.css',profile=identProfile())
 
 @app.route("/logout")
 def actionLogout():
@@ -170,16 +186,14 @@ def registerPage():
         rptpwd = request.form['rptpwd']
         profile = sqlutils.selectQuery('profile',['login'],'login="{}"'.format(login))
         if len(profile) > 0:
-            return renderHTML("register",css='/css/style.css',errmsg='Данный логин занят! Попробуйте другой.')
+            return renderHTML("register",css='/css/style.css',errmsg='Данный логин занят! Попробуйте другой.',profile=identProfile())
         elif len(password) < 8:
-            return renderHTML("register",css='/css/style.css',errmsg='Минимальная длина пароля 8 символов!')
+            return renderHTML("register",css='/css/style.css',errmsg='Минимальная длина пароля 8 символов!',profile=identProfile())
         elif password != rptpwd:
             return renderHTML("register",css='/css/style.css',errmsg='Пароли не совпадают!')
         else:
-            sqlutils.insertQuery('profile',['profile_id','login','password','access_level'],[[str(len(sqlutils.selectQuery('profile',['login'],None))),login,sha256(password.encode('utf-8')).hexdigest(),'1']])
-            resp = make_response(renderHTML("index",css='/css/style.css',profile=login))
-            resp.set_cookie('login',login)
-            return resp
+            sqlutils.insertQuery('profile',['profile_id','login','password','access_level'],[[str(len(sqlutils.selectQuery('profile',['login'],None))),login,sha256(password.encode('utf-8')).hexdigest(),'2']])
+            return renderCookedHTML({'login' : login},"index",css='/css/style.css',profile=login)
     else:
         return renderHTML("register",css='/css/style.css')
     
