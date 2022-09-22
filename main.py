@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory, redirect
+from flask import Flask, request, send_from_directory, redirect, abort
 from flask import render_template,flash, redirect, url_for, make_response
 
 import markdown
@@ -9,9 +9,16 @@ import os
 import re
 from hashlib import sha256
 
+import profile
 import sqlutils
 
 def renderHTML(pagetype,**args):
+    if 'css' not in args:
+        args['css'] = '/css/style.css'
+    if 'profile' not in args:
+        args['profile'] = profile.identProfile()
+    if 'level' not in args:
+        args['level'] = profile.checkLevel()
     return render_template(pagetype+".html", **args)
 
 def renderCookedHTML(cookie,pagetype, **args):
@@ -19,16 +26,6 @@ def renderCookedHTML(cookie,pagetype, **args):
     for key in cookie:
         result.set_cookie(key,cookie[key])
     return result
-
-def identProfile():
-    return request.cookies.get('login') 
-
-def checkLevel():
-    login = identProfile()
-    if login is None:
-        return 1
-    else:
-        return sqlutils.selectQuery('profile',['login','access_level'],'login="{}"'.format(login))[0]['access_level']
 
 def getNote(name):
     result = sqlutils.selectQuery('notes',['name','caption','annotation','content','author'],'name="{}"'.format(name))
@@ -75,7 +72,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return renderHTML("index",css="/css/style.css", profile=identProfile())
+    return renderHTML("index")
 
 @app.route('/wiki/<name>/')
 def page_name(name):
@@ -86,7 +83,7 @@ def page_name(name):
         title = note['caption']
     else:
         title = name
-    return renderHTML("wiki",title=title, name=name,note=note,css='/css/style.css',profile=identProfile())
+    return renderHTML("wiki",title=title, name=name,note=note)
 
 @app.route('/edit',methods = ['POST','GET'])
 def editPage():
@@ -95,22 +92,26 @@ def editPage():
         content = request.form['content']
         desc = request.form['desc']
         caption = request.form['caption']
-    
-        if getNote(name):
-            sqlutils.updateQuery('notes',[
-                    ['annotation',desc],
-                    ['caption',caption],
-                    ['content',content]
-                ],'name="{}"'.format(name))
+        note = getNote(name)
+        author = sqlutils.selectQuery('profile',['profile_id','login'],'profile_id={}'.format(note['author']))[0]['login']
+        if (profile.identProfile() == author) or (profile.checkLevel() >= 3): 
+            if note:
+                sqlutils.updateQuery('notes',[
+                        ['annotation',desc],
+                        ['caption',caption],
+                        ['content',content]
+                    ],'name="{}"'.format(name))
+            else:
+                sqlutils.insertQuery('notes',['name','annotation','caption','content','author'],[[name,desc,caption,content,'0']]) 
+            return redirect('/wiki/{}'.format(name),302)
         else:
-            sqlutils.insertQuery('notes',['name','annotation','caption','content','author'],[[name,desc,caption,content,'0']]) 
-        return redirect('/wiki/{}'.format(name),302)
+            abort(401)
     else:
         name = request.args.get('name')
         note = getNote(name)
         author = sqlutils.selectQuery('profile',['profile_id','login'],'profile_id={}'.format(note['author']))[0]['login']
-        if (identProfile() == author) or (checkLevel() >= 3):
-            return renderHTML("edit",css="/css/style.css",title="Редактирование страницы", name=name,note=note,profile=identProfile())
+        if (profile.identProfile() == author) or (profile.checkLevel() >= 3):
+            return renderHTML("edit",title="Редактирование страницы", name=name,note=note)
         else:
             return redirect('/login',302)
 
@@ -118,9 +119,11 @@ def editPage():
 def deletePage():
     name = request.args.get('name')
     q = request.args.get('q')
-    if checkLevel() >= 4:
+    if profile.checkLevel() >= 4:
         sqlutils.deleteQuery('notes','name="{}"'.format(name))
-    return redirect('/search?q={}'.format(q))
+        return redirect('/search?q={}'.format(q))
+    else:
+        abort(401)
 
 @app.route('/random')
 def randomPage():
@@ -152,7 +155,7 @@ def searchPage():
     q = request.args.get('q')
     result = searchResult(q)
                
-    return renderHTML("search",q=q,result=result,css='/css/style.css',profile=identProfile(),level=checkLevel())
+    return renderHTML("search",q=q,result=result,css='/css/style.css',profile=profile.identProfile(),level=profile.checkLevel())
 
 @app.route('/login',methods = ['POST','GET'])
 def loginPage():
@@ -163,18 +166,18 @@ def loginPage():
         profile = sqlutils.selectQuery('profile',['login','password'],'login="{}"'.format(login))
         # профиль не найден
         if len(profile) == 0: 
-            return renderHTML("login",css='/css/style.css',errmsg='Такого профиля не существует! :(',profile=identProfile())
+            return renderHTML("login",errmsg='Такого профиля не существует! :(')
         # введен неправильный пароль
         elif profile[0]['password'] != sha256(password.encode('utf-8')).hexdigest():
-            return renderHTML("login",css='/css/style.css',errmsg='Неверный пароль! :(',profile=identProfile())
+            return renderHTML("login",errmsg='Неверный пароль! :(')
         else:
-            return renderCookedHTML({'login' : login},"index",css='/css/style.css',profile=login)
+            return renderCookedHTML({'login' : login},"index",profile=login)
     else:
-        return renderHTML("login",css='/css/style.css',profile=identProfile())
+        return renderHTML("login")
 
 @app.route("/logout")
 def actionLogout():
-    resp = make_response(renderHTML("index",css='/css/style.css'))
+    resp = make_response(renderHTML("index"))
     resp.set_cookie('login','', expires=0)
     return resp
 
@@ -186,16 +189,16 @@ def registerPage():
         rptpwd = request.form['rptpwd']
         profile = sqlutils.selectQuery('profile',['login'],'login="{}"'.format(login))
         if len(profile) > 0:
-            return renderHTML("register",css='/css/style.css',errmsg='Данный логин занят! Попробуйте другой.',profile=identProfile())
+            return renderHTML("register",errmsg='Данный логин занят! Попробуйте другой.')
         elif len(password) < 8:
-            return renderHTML("register",css='/css/style.css',errmsg='Минимальная длина пароля 8 символов!',profile=identProfile())
+            return renderHTML("register",errmsg='Минимальная длина пароля 8 символов!')
         elif password != rptpwd:
-            return renderHTML("register",css='/css/style.css',errmsg='Пароли не совпадают!')
+            return renderHTML("register",errmsg='Пароли не совпадают!')
         else:
             sqlutils.insertQuery('profile',['profile_id','login','password','access_level'],[[str(len(sqlutils.selectQuery('profile',['login'],None))),login,sha256(password.encode('utf-8')).hexdigest(),'2']])
-            return renderCookedHTML({'login' : login},"index",css='/css/style.css',profile=login)
+            return renderCookedHTML({'login' : login},"index",profile=login)
     else:
-        return renderHTML("register",css='/css/style.css')
+        return renderHTML("register")
     
 
 if __name__ == "__main__":
