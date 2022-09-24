@@ -2,8 +2,8 @@ import mysql.connector
 
 DB = mysql.connector.connect(
         host='localhost',
-        user='webmaster',
-        password='12345678',
+        user='user',
+        password='password',
         database='ashwiki'
 )
 

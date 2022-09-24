@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory, redirect, abort
+from flask import Flask, request, send_from_directory, redirect, abort, jsonify
 from flask import render_template,flash, redirect, url_for, make_response
 
 import markdown
@@ -93,24 +93,30 @@ def editPage():
         desc = request.form['desc']
         caption = request.form['caption']
         note = getNote(name)
-        author = sqlutils.selectQuery('profile',['profile_id','login'],'profile_id={}'.format(note['author']))[0]['login']
-        if (profile.identProfile() == author) or (profile.checkLevel() >= 3): 
-            if note:
+        if note:
+            author = profile.getAuthor(name)
+            print(author)
+            if (profile.identProfile() == author) or (profile.checkLevel() >= 3):
                 sqlutils.updateQuery('notes',[
                         ['annotation',desc],
                         ['caption',caption],
-                        ['content',content]
+                        ['content',content],
                     ],'name="{}"'.format(name))
             else:
-                sqlutils.insertQuery('notes',['name','annotation','caption','content','author'],[[name,desc,caption,content,'0']]) 
-            return redirect('/wiki/{}'.format(name),302)
+                abort(401)
         else:
-            abort(401)
+            if profile.checkLevel() >= 2:
+                sqlutils.insertQuery('notes',['name','annotation','caption','content','author'],[[name,desc,caption,content,str(sqlutils.selectQuery('profile',['profile_id','login'],'login="{}"'.format(profile.identProfile()))[0]['profile_id'])]]) 
+            else:
+                abort(401)
+        return redirect('/wiki/{}'.format(name),302)
     else:
         name = request.args.get('name')
+        author = profile.getAuthor(name)
         note = getNote(name)
-        author = sqlutils.selectQuery('profile',['profile_id','login'],'profile_id={}'.format(note['author']))[0]['login']
-        if (profile.identProfile() == author) or (profile.checkLevel() >= 3):
+        if not author:
+            author = profile.identProfile()
+        if (profile.identProfile() == author) or (profile.checkLevel() >= 3) or ((not note) and profile.checkLevel() >= 2):
             return renderHTML("edit",title="Редактирование страницы", name=name,note=note)
         else:
             return redirect('/login',302)
@@ -119,7 +125,8 @@ def editPage():
 def deletePage():
     name = request.args.get('name')
     q = request.args.get('q')
-    if profile.checkLevel() >= 4:
+    author = profile.getAuthor(name)
+    if (profile.checkLevel() >= 4) or (profile.identProfile() == author):
         sqlutils.deleteQuery('notes','name="{}"'.format(name))
         return redirect('/search?q={}'.format(q))
     else:
@@ -177,7 +184,7 @@ def loginPage():
 
 @app.route("/logout")
 def actionLogout():
-    resp = make_response(renderHTML("index"))
+    resp = make_response(renderHTML("index",profile=None))
     resp.set_cookie('login','', expires=0)
     return resp
 
@@ -190,6 +197,8 @@ def registerPage():
         profile = sqlutils.selectQuery('profile',['login'],'login="{}"'.format(login))
         if len(profile) > 0:
             return renderHTML("register",errmsg='Данный логин занят! Попробуйте другой.')
+        elif not (all(x.isalnum() or (x == '_') for x in login) and login[1].isalpha()):
+            return renderHTML("register",errmsg='Логин должен состоять только из букв, _ и цифр без пробелов. А также начинаться с буквы.')
         elif len(password) < 8:
             return renderHTML("register",errmsg='Минимальная длина пароля 8 символов!')
         elif password != rptpwd:
@@ -199,7 +208,10 @@ def registerPage():
             return renderCookedHTML({'login' : login},"index",profile=login)
     else:
         return renderHTML("register")
-    
+
+@app.route("/myip", methods=['GET'])
+def getMyIP():
+    return jsonify({'ip' : request.remote_addr}),200
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0')
