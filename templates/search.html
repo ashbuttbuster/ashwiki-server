@@ -8,8 +8,8 @@
 <h2><a href="/wiki/{{element.name}}">{{element.caption |safe }}</a></h2>
 <p>{{element.annotation |safe}}</p>
 <p>Автор: {{element.author}}</p>
-{% if level >= 3 %}
-<p>[<a href='/edit?name={{element.name}}'>править</a>] {%if level>=4%}[<a href='/delete?name={{element.name}}&q={{q}}'>удалить</a>]{%endif%}</p>
+{% if level >= 3 or profile == element.author %}
+<p>[<a href='/edit?name={{element.name}}'>править</a>] {%if level>=4 or profile==element.author%}[<a href='/delete?name={{element.name}}&q={{q}}'>удалить</a>]{%endif%}</p>
 {% endif %}
 {% endfor %}
 {% else %}
