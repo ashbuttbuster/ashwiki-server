@@ -7,7 +7,6 @@ from hashlib import sha256
 from flask import request
 
 import sqlutils
-from main import getNote
 
 def generateToken(login):
     key = random.randbytes(25).hex()
@@ -24,7 +23,9 @@ def checkLevel():
         return sqlutils.selectQuery('profile',['login','access_level'],'login="{}"'.format(login))[0]['access_level']
 
 def getAuthor(noteName):
-    note = getNote(noteName)
+    notes = sqlutils.selectQuery('notes',['name','author'],'name="{}"'.format(noteName))
+    if len(notes) > 0:
+        note = notes[0]
     if note:
         return sqlutils.selectQuery('profile',['profile_id','login'],'profile_id={}'.format(note['author']))[0]['login']
     else:
