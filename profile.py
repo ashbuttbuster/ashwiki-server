@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from flask import request
 import random
 import os
 import re
@@ -8,9 +9,12 @@ from flask import request
 
 import sqlutils
 
-def generateToken(login):
+def generateToken(login, expire=7):
     key = random.randbytes(25).hex()
-
+    ip = request.environ['HTTP_X_FORWARDED_FOR']
+    expire_date = datetime.now() + timedelta(expire)
+    profile_id = sqlutils.selectQuery('profile',['profile_id','login'],f'login="{login}"')[0]['profile_id']
+    sqlutils.insertQuery('token',['id','profile','user_ip','expire_date'],[[key,str(profile_id),ip,expire_date.strftime("%Y-%m-%d")]])
 
 def identProfile():
     return request.cookies.get('login')

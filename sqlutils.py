@@ -1,9 +1,10 @@
+import config
 import mysql.connector
 
 DB = mysql.connector.connect(
         host='localhost',
-        user='user',
-        password='password',
+        user=config.MYSQL_USER,
+        password=config.MYSQL_PASSWORD,
         database='ashwiki'
 )
 

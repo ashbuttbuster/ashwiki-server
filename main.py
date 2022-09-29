@@ -209,6 +209,3 @@ def registerPage():
     else:
         return renderHTML("register")
 
-@app.route("/myip", methods=['GET'])
-def getMyIP():
-    return jsonify({'ip' : request.remote_addr}),200
