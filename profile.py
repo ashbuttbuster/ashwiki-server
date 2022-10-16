@@ -9,6 +9,17 @@ from flask import request
 
 import sqlutils
 
+class Token:
+    def __init__(self):
+        pass
+
+    def generate(self,login,expire=7):
+        self.key = random.randbytes(25).hex()
+        self.IP = request.environ['HTTP_X_FORWARDED_FOR']
+        self.date = datetime.now() + timedelta(expire)
+        self.profile = getProfileID(login)
+        sqlutils.insertQuery('token',['id','profile','user_ip','expire_date'],[[self.key,str(self.profile),self.IP,self.date.strftime("%Y-%m-%d")]])
+
 def getProfileID(login):
     return sqlutils.selectQuery('profile',['profile_id','login'],f'login="{login}"')[0]['profile_id']
 
@@ -22,7 +33,9 @@ def generateToken(login, expire=7):
 def validateToken(login,ip):
     profile_id = getProfileID(login)
     tokens = sqlutils.selectQuery('token',['id','profile','user_ip','expire_date'],f'profile={profile_id}')
-    if len(tokens) > 1:
+    if len(tokens) < 1:
+        return False, "Profile has no token."
+    elif len(tokens) > 1:
         return False, "Несколько токенов на один профиль."
     elif tokens[0]['user_ip'] != ip:
         return False, "IP пользователя отличается от IP, привязанный к токену"
