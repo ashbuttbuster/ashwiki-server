@@ -56,6 +56,7 @@ def checkLevel():
 
 def getAuthor(noteName):
     notes = sqlutils.selectQuery('notes',['name','author'],'name="{}"'.format(noteName))
+    note = None
     if len(notes) > 0:
         note = notes[0]
     if note:

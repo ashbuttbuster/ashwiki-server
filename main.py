@@ -188,24 +188,36 @@ def actionLogout():
     resp.set_cookie('login','', expires=0)
     return resp
 
-@app.route("/register", methods = ['POST','GET'])
-def registerPage():
-    if request.method == 'POST':
-        login = request.form['login']
-        password = request.form['password']
-        rptpwd = request.form['rptpwd']
-        profile = sqlutils.selectQuery('profile',['login'],'login="{}"'.format(login))
-        if len(profile) > 0:
-            return renderHTML("register",errmsg='Данный логин занят! Попробуйте другой.')
-        elif not (all(x.isalnum() or (x == '_') for x in login) and login[1].isalpha()):
-            return renderHTML("register",errmsg='Логин должен состоять только из букв, _ и цифр без пробелов. А также начинаться с буквы.')
-        elif len(password) < 8:
-            return renderHTML("register",errmsg='Минимальная длина пароля 8 символов!')
-        elif password != rptpwd:
-            return renderHTML("register",errmsg='Пароли не совпадают!')
-        else:
-            sqlutils.insertQuery('profile',['profile_id','login','password','access_level'],[[str(len(sqlutils.selectQuery('profile',['login'],None))),login,sha256(password.encode('utf-8')).hexdigest(),'2']])
-            return renderCookedHTML({'login' : login},"index",profile=login)
-    else:
-        return renderHTML("register")
+#@app.route("/register", methods = ['POST','GET'])
+#def registerPage():
+#    if request.method == 'POST':
+#        login = request.form['login']
+#        password = request.form['password']
+#        rptpwd = request.form['rptpwd']
+#        profile = sqlutils.selectQuery('profile',['login'],'login="{}"'.format(login))
+#        if len(profile) > 0:
+#            return renderHTML("register",errmsg='Данный логин занят! Попробуйте другой.')
+#        elif not (all(x.isalnum() or (x == '_') for x in login) and login[1].isalpha()):
+#            return renderHTML("register",errmsg='Логин должен состоять только из букв, _ и цифр без пробелов. А также начинаться с буквы.')
+#        elif len(password) < 8:
+#            return renderHTML("register",errmsg='Минимальная длина пароля 8 символов!')
+#        elif password != rptpwd:
+#            return renderHTML("register",errmsg='Пароли не совпадают!')
+#        else:
+#            sqlutils.insertQuery('profile',['profile_id','login','password','access_level'],[[str(len(sqlutils.selectQuery('profile',['login'],None))),login,sha256(password.encode('utf-8')).hexdigest(),'2']])
+#            return renderCookedHTML({'login' : login},"index",profile=login)
+#    else:
+#        return renderHTML("register")
 
+@app.route("/admin")
+def adminPanel():
+    if profile.checkLevel() == 5:
+        return renderHTML("admin_general", title="Админка")
+    else:
+        return redirect('/login',302)
+@app.route("/admin/<name>")
+def adminPanels(name):
+    if profile.checkLevel() == 5:
+        return renderHTML("admin_" + name,title="Админка")
+    else:
+        return redirect('/login',302)
