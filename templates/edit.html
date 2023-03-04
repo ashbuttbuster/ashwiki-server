@@ -9,10 +9,18 @@
  страницы "{{name}}"
 </h1>
 <form name="pageedit" action="/edit" method='post'>
-	<input type="hidden" name='name' value='{{name}}'>
-	<p>Название:<input type="text" name='caption' value='{{note['caption']}}'></p>
-	<p>Описание:<input type="text" name='desc' value='{{note['annotation']}}'></p>
-	<p><textarea name='content' rows='25' cols='30'>{{note['content']}}</textarea></p>
-	<input class="buttonplain" type="submit" value="Сохранить">
+	<table>
+		<tr>
+			<td><input type="hidden" name='name' value='{{name}}'>
+				Название:</td><td><input type="text" name='caption' value='{{note['caption']}}'>
+		</td></tr>
+		<tr>
+			<td>Описание:</td><td><input type="text" name='desc' value='{{note['annotation']}}'>
+		</td></tr>
+		<tr>
+			<td colspan=2><textarea name='content' rows='25' cols='45'>{{note['content']}}</textarea></td>
+		</tr>
+		<tr><td><input class="buttonplain" type="submit" value="Сохранить"></td></tr>
+	</table>
 </form>
 {% endblock %}
