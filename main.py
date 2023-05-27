@@ -218,6 +218,7 @@ def adminPanel():
 @app.route("/admin/<name>")
 def adminPanels(name):
     if profile.checkLevel() == 5:
-        return renderHTML("admin_" + name,title="Админка")
+        usrtab = sqlutils.selectQuery('profile',['profile_id','login','access_level'],'profile_id > 0')
+        return renderHTML("admin_" + name,title="Админка",users=usrtab)
     else:
         return redirect('/login',302)
