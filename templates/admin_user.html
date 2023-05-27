@@ -1,6 +1,22 @@
 {% extends "base_admin.html" %}
 
 {% block content %}
-<h1>Пользователи</h1>
-
+<h1>Пользователи</h1><br>
+{% if users %}
+<table>
+    <tr>
+        <td>Имя</td>
+        <td>Уровень доступа</td>
+{% for user in users %}
+    <tr>
+        <td><b>{{user['login']}}</b></td>
+        <td align='center'>{{user['access_level']}}</td>
+        <td>[<a href='/admin/users/edit?name={{user['login']}}'>править</a>]</td>
+        <td>[<a href='/admin/users/remove?name={{user['login']}}'>удалить</a>]</td>
+    </tr>
+{% endfor %}
+</table>
+{% endif %}
+<br>
+<a href='/admin/users/add'>Добавить...</a>
 {% endblock %}
