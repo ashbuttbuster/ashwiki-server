@@ -8,11 +8,15 @@ DB = mysql.connector.connect(
         database='ashwiki'
 )
 
-def selectQuery(table,keywords,condition):
+def selectQuery(table,keywords,condition = None,innerJoin = None):
     cursor = DB.cursor()
     sql = "SELECT {} FROM {}".format(','.join(keywords),table)
     if condition:
-        sql = sql + " WHERE {};".format(condition)
+        sql = sql + " WHERE {}".format(condition)
+    if innerJoin:
+        for tab,alias in innerJoin.items():
+            sql = sql + " INNER JOIN {} ON {}".format(tab,','.join(alias))
+    sql = sql + ';'
     print(sql)
     result = []
     cursor.execute(sql)
@@ -21,7 +25,9 @@ def selectQuery(table,keywords,condition):
         for i in range(len(keywords)):
             record[keywords[i]] = row[i]
         result.append(record)
+    print(str(result))
     return result
+
 
 def insertQuery(table,keywords,values):
         cursor = DB.cursor()
