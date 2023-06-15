@@ -5,11 +5,11 @@
 
 {% if result %}
 {% for element in result %}
-<h2><a href="/wiki/{{element.name}}">{{element.caption |safe }}</a></h2>
-<p>{{element.annotation |safe}}</p>
-<p>Автор: {{element.author}}</p>
-{% if level >= 3 or profile == element.author %}
-<p>[<a href='/edit?name={{element.name}}'>править</a>] {%if level>=4 or profile==element.author%}[<a href='/delete?name={{element.name}}&q={{q}}'>удалить</a>]{%endif%}</p>
+<h2><a href="/wiki/{{element['notes.name']}}">{{element['notes.caption'] |safe }}</a></h2>
+<p>{{element['notes.annotation'] |safe}}</p>
+<p>Автор: {{element['profile.login']}}</p>
+{% if level >= 3 or profile == element['profile.login'] %}
+<p>[<a href='/edit?name={{element['notes.name']}}'>править</a>] {%if level>=4 or profile==element['profile.login']%}[<a href='/delete?name={{element['notes.name']}}&q={{q}}'>удалить</a>]{%endif%}</p>
 {% endif %}
 {% endfor %}
 {% else %}
