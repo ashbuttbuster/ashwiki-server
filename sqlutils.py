@@ -11,11 +11,11 @@ DB = mysql.connector.connect(
 def selectQuery(table,keywords,condition = None,innerJoin = None):
     cursor = DB.cursor()
     sql = "SELECT {} FROM {}".format(','.join(keywords),table)
-    if condition:
-        sql = sql + " WHERE {}".format(condition)
     if innerJoin:
         for tab,alias in innerJoin.items():
             sql = sql + " INNER JOIN {} ON {}".format(tab,','.join(alias))
+    if condition:
+        sql = sql + " WHERE {}".format(condition)
     sql = sql + ';'
     print(sql)
     result = []
@@ -23,7 +23,7 @@ def selectQuery(table,keywords,condition = None,innerJoin = None):
     for row in cursor:
         record = {}
         for i in range(len(keywords)):
-            record[keywords[i]] = row[i]
+            record[keywords[i].split(' as ')[-1]] = row[i]
         result.append(record)
     print(str(result))
     return result

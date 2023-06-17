@@ -37,15 +37,15 @@ def getNote(name):
 def searchResult(q):
     Q = q.lower().split(' ')
     matchd = []
-    result = sqlutils.selectQuery('notes',['notes.name','notes.annotation','notes.caption','notes.author','profile.profile_id','profile.login'],None,
+    result = sqlutils.selectQuery('notes',['notes.name as name','notes.annotation as annotation','notes.caption as caption','notes.author','profile.profile_id','profile.login as author'],None,
                                   {'profile' : ['notes.author = profile.profile_id'] }
                                  )        
     for row in result:
 #        row['author'] = sqlutils.selectQuery('profile',['profile_id','login'],'profile_id=' + str(row['author']))[0]['login']
-        if any(el in row['notes.caption'].lower() for el in re.split(" .,!?-",q.lower())):
+        if any(el in row['caption'].lower() for el in re.split(" .,!?-",q.lower())):
             caption = ""
 
-            for word in row['notes.caption'].split(' '):
+            for word in row['caption'].split(' '):
                 if any(el in word.lower() for el in Q):
                     caption = caption + " <span class='tag'>{}</span> ".format(word)
                 elif any(el in word.lower()+"." for el in Q):
@@ -53,11 +53,11 @@ def searchResult(q):
                 else:
                     caption = caption + " {}. ".format(word)
 
-                row['notes.caption'] = caption
+                row['caption'] = caption
             matchd.append(row)
-        elif set(Q) & set(row['notes.annotation'].lower().split(' ')):
+        elif set(Q) & set(row['annotation'].lower().split(' ')):
             new_desc = ""
-            for word in row['notes.annotation'].split(' '):
+            for word in row['annotation'].split(' '):
                 if any(el in word.lower() for el in Q):
                     new_desc = new_desc + " <span class='tag'>{}</span> ".format(word)
                 elif any(el in word.lower()+"." for el in Q):
@@ -65,7 +65,7 @@ def searchResult(q):
                 else:
                     new_desc = new_desc + " {} ".format(word)
 
-                row['notes.annotation'] = new_desc
+                row['annotation'] = new_desc
 
             matchd.append(row)
     return matchd
@@ -116,12 +116,16 @@ def editPage():
         name = request.args.get('name')
         author = profile.getAuthor(name)
         note = getNote(name)
-        if not author:
-            author = profile.identProfile()
-        if (profile.identProfile() == author) or (profile.checkLevel() >= 3) or ((not note) and profile.checkLevel() >= 2):
-            return renderHTML("edit",title="Редактирование страницы", name=name,note=note)
+        if note:
+            if (profile.identProfile() == author) or (profile.checkLevel() >= 3):
+                return renderHTML("edit",title="Редактирование страницы", name=name,note=note)
+            else:
+                return redirect('/login',302)
         else:
-            return redirect('/login',302)
+            if (profile.checkLevel() >= 2):
+                return renderHTML("edit",title="Создание страницы", name=name,note=note)
+            else:
+                return redirect('/login',302)
 
 @app.route('/delete')
 def deletePage():
@@ -138,7 +142,7 @@ def deletePage():
 def randomPage():
     notes = searchResult('')
     note = random.choice(notes)
-    return redirect('/wiki/{}'.format(note['notes.name']))
+    return redirect('/wiki/{}'.format(note['name']))
 
 @app.route('/img/<name>')
 def receiveImage(name):

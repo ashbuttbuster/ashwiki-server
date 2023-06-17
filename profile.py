@@ -55,11 +55,13 @@ def checkLevel():
         return sqlutils.selectQuery('profile',['login','access_level'],'login="{}"'.format(login))[0]['access_level']
 
 def getAuthor(noteName):
-    notes = sqlutils.selectQuery('notes',['name','author'],'name="{}"'.format(noteName))
+    notes = sqlutils.selectQuery('notes',['notes.name','notes.author','profile.profile_id','profile.login'],'notes.name="{}"'.format(noteName),
+                                 {'profile' : ['notes.author = profile.profile_id']}
+                                )
     note = None
     if len(notes) > 0:
         note = notes[0]
     if note:
-        return sqlutils.selectQuery('profile',['profile_id','login'],'profile_id={}'.format(note['author']))[0]['login']
+        return notes[0]['profile.login']
     else:
         return None
