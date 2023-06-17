@@ -35,7 +35,11 @@
 					</form><br>
 					
 					<a href="/">Главная</a><br>
-					<a href="/random">Случайная статья</a><br>	
+					<a href="/random">Случайная статья</a><br>
+					<br>
+					{% if level >=4 %}
+					<a href="/admin">Панель администратора</a>
+					{% endif %}
 				</td>
 				<td>
 					{% block content %}{% endblock %}
