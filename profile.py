@@ -5,8 +5,6 @@ import os
 import re
 from hashlib import sha256
 
-from flask import request
-
 import sqlutils
 
 class Token:

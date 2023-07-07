@@ -194,6 +194,11 @@ def actionLogout():
     resp.set_cookie('login','', expires=0)
     return resp
 
+@app.route("/verify/<token>")
+def actionVerify(token):
+
+    pass
+
 @app.route("/admin/user/add", methods = ['POST','GET'])
 def registerPage():
     if request.method == 'POST':
