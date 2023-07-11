@@ -10,8 +10,15 @@
 {% for user in users %}
     <tr>
         <td><b>{{user['login']}}</b></td>
-        <td align='center'>{{user['access_level']}}</td>
-        <td>[<a href='/admin/users/edit?name={{user['login']}}'>править</a>]</td>
+        <td align='center'>
+        {% for i in range(1,6) %}
+            {% if i == user['access_level'] %}
+{{i}}
+            {% else %}
+[<a href='/admin/user/change_access_level?login={{user['login']}}&access_level={{i}}'>{{i}}</a>]
+            {% endif %}
+        {% endfor %}
+        </td>
         <td>[<a href='/admin/users/remove?name={{user['login']}}'>удалить</a>]</td>
     </tr>
 {% endfor %}
