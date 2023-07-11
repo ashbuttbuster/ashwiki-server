@@ -233,3 +233,7 @@ def adminPanels(name):
         return renderHTML("admin_" + name,title="Админка",users=usrtab)
     else:
         return redirect('/login',302)
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return renderHTML("error_404"), 404
