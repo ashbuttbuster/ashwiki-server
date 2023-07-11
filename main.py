@@ -220,6 +220,18 @@ def registerPage():
     else:
         return renderHTML("admin_adduser")
 
+@app.route("/admin/user/change_access_level")
+def changeAccessLevel():
+    if profile.checkLevel() >= 4:
+        login = request.args.get('login')
+        accessLevel = request.args.get('access_level')
+
+        sqlutils.updateQuery('profile',[['access_level',accessLevel]],'login="{}"'.format(login))
+
+        return redirect('/admin/user',302)
+    else:
+        abort(401)
+
 @app.route("/admin")
 def adminPanel():
     if profile.checkLevel() == 5:
