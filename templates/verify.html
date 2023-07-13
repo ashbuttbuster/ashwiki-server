@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Пожалуйста, пройдите верификацию!</h1>
+{% if msg %}
+<p>{{msg}}</p>
+{% endif %}
+<p>Щелкните по <a href='/verify/{{token}}'>ссылке</a>, чтобы подтвердить.</p>
+{% endblock %}
