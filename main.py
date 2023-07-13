@@ -23,9 +23,16 @@ def renderHTML(pagetype,**args):
 
 def renderCookedHTML(cookie,pagetype, **args):
     result = make_response(renderHTML(pagetype,**args))
-    for key in cookie:
-        result.set_cookie(key,cookie[key])
+    for key,value in cookie.items():
+        result.set_cookie(key,value)
     return result
+
+def redirectCooked(cookie,link):
+    response = make_response(redirect(link))
+    for key,value in cookie.items():
+        response.set_cookie(key,value)
+    return response
+
 
 def getNote(name):
     result = sqlutils.selectQuery('notes',['name','caption','annotation','content','author'],'name="{}"'.format(name))
@@ -176,28 +183,45 @@ def loginPage():
         login = request.form['login']
         password = request.form['password']
 
-        profile = sqlutils.selectQuery('profile',['login','password'],'login="{}"'.format(login))
+        profiles = sqlutils.selectQuery('profile',['login','password'],'login="{}"'.format(login))
         # профиль не найден
-        if len(profile) == 0: 
+        if len(profiles) == 0: 
             return renderHTML("login",errmsg='Такого профиля не существует! :(')
         # введен неправильный пароль
-        elif profile[0]['password'] != sha256(password.encode('utf-8')).hexdigest():
+        elif profiles[0]['password'] != sha256(password.encode('utf-8')).hexdigest():
             return renderHTML("login",errmsg='Неверный пароль! :(')
         else:
-            return renderCookedHTML({'login' : login},"index",profile=login)
+            token = profile.Token(login)
+            valid = token.validate()
+
+            print(str(valid))
+            if not valid[0]:
+                token.generate(login)
+                return renderHTML("verify",msg=valid[1],token=token.key)
+            else:
+                return renderCookedHTML({'token' : token.key},"index",profile=login)
     else:
         return renderHTML("login")
+
+@app.route('/verify')
+def verifyPage():
+    return renderHTML("verify")
+
+@app.route('/verify/<token>')
+def getToken(token):
+    login = profile.identProfile(token)
+
+    sqlutils.updateQuery('token',[['verified',1]],f'id=\'{token}\'')
+    return redirectCooked({
+        'token' : token,
+        'login' : login
+    },"/")
 
 @app.route("/logout")
 def actionLogout():
     resp = make_response(renderHTML("index",profile=None))
-    resp.set_cookie('login','', expires=0)
+    resp.set_cookie('token','', expires=0)
     return resp
-
-@app.route("/verify/<token>")
-def actionVerify(token):
-
-    pass
 
 @app.route("/admin/user/add", methods = ['POST','GET'])
 def registerPage():
